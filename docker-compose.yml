@@ -1,0 +1,36 @@
+services:
+  # バックエンド（Go/Gin）サービス
+  backend:
+    # ここにバックエンド（Go/Gin）サービスの設定を追加する
+
+  # フロントエンド（Next.js）サービス
+  frontend:
+    container_name: go-samurai-store-frontend
+    # frontend/Dockerfile.devファイルを使ってビルドする
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      # ホストPCの3000番ポートを、コンテナの3000番ポートに接続する
+      - "3000:3000"
+    volumes:
+      # ホストPCのfrontendフォルダとコンテナを同期する（ホットリロードのため）
+      - ./frontend:/app
+      # node_modulesは同期対象から除外する（パフォーマンス向上のため）
+      - /app/node_modules
+      - /app/.next
+    environment:
+      # APIのベースURLを設定する（フロントエンドからバックエンドへのリクエストに使用）
+      API_BASE_URL: "http://backend:8080"
+      # Next.jsのホットリロードを有効にする
+      WATCHPACK_POLLING: "true"
+    depends_on:
+      # backendサービスが起動してからfrontendサービスを起動する
+      - backend
+    networks:
+      - go-samurai-store-network
+
+# サービス間で通信するためのカスタムネットワーク
+networks:
+  go-samurai-store-network:
+    driver: bridge
