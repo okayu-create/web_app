@@ -27,16 +27,16 @@ type Pagination struct {
 }
 
 // 商品一覧ページ全体のレスポンスを表す構造体
-type ProductPageData struct {
-	Products   []Product  `json:"Products"`
-	Pagination Pagination `json:"Pagination"`
+type ProductsPageData struct {
+	Products   []Product  `json:"products"`
+	Pagination Pagination `json:"pagination"`
 }
 
 // --- 2. ハンドラ定義 ---
 
 // 商品一覧を返す関数
 func GetProductsHandler(c *gin.Context) {
-	// ダミーの商品データを３つ作成する
+	// ダミーの商品データを3つ作成する
 	products := []Product{
 		{
 			ID:       1,
@@ -57,16 +57,17 @@ func GetProductsHandler(c *gin.Context) {
 			ImageURL: "product03.jpg",
 		},
 	}
+
 	// ダミーのページネーション情報を作成する
 	pagination := Pagination{
 		CurrentPage: 1,  // 現在のページ
-		PerPage:     16, // 1ページ当たりの商品数
+		PerPage:     16, // 1ページあたりの商品数
 		TotalItems:  3,  // 全商品数
 		TotalPages:  1,  // 総ページ数
 	}
 
 	// 最終的なレスポンスの形にまとめる
-	response := ProductPageData{
+	response := ProductsPageData{
 		Products:   products,
 		Pagination: pagination,
 	}
