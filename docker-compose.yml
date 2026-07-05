@@ -1,7 +1,20 @@
 services:
   # バックエンド（Go/Gin）サービス
   backend:
-    # ここにバックエンド（Go/Gin）サービスの設定を追加する
+    container_name: go-samurai-store-backend
+    # backend/Dockerfile.devファイルを使ってビルドする
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      # ホストPCの8080番ポートを、コンテナの8080番ポートに接続する
+      - "8080:8080"
+    volumes:
+      # ホストPCのbackendフォルダとコンテナを同期する（ホットリロードのため）
+      - ./backend:/app
+    networks:
+      - go-samurai-store-network
+
 
   # フロントエンド（Next.js）サービス
   frontend:
