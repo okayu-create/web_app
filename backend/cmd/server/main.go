@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/okayu-create/web_app/tree/main/backend/internal/handler"
 )
 
 func main() {
@@ -20,6 +21,7 @@ func main() {
 				"message": "Hello, World!",
 			})
 		})
+		api.GET("/products", handler.GetProductsHandler)
 	}
 
 	// Ginサーバをポート8080で起動する
