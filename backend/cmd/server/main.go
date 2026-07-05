@@ -33,6 +33,10 @@ func main() {
 		MaxAge: 12 * time.Hour,
 	}))
 
+	// /uploads/フォルダの内容を、URLパスの/uploads/で提供する
+	// （DockerfileのWORKDIR［/app］から見た相対パス）
+	router.StaticFS("/uploads", http.Dir("uploads"))
+
 	// /api以下の各ルートを定義する
 	api := router.Group("/api")
 	{
