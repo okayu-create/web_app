@@ -2,6 +2,7 @@ package handler
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"math"
 	"net/http"
@@ -57,6 +58,21 @@ func GetProductsHandler(c *gin.Context) {
 		perPage = 16
 	}
 
+	// クエリパラメータ(?sort=x)から「並べ替え条件」を取得する（デフォルトは新着順）
+	sort := c.DefaultQuery("sort", "new")
+
+	// 並べ替え条件（ORDER BY句）を構築する
+	var orderByClause string
+	switch sort {
+	case "priceAsc": //	価格が安い順
+		orderByClause = "ORDER BY price ASC"
+	case "new": // 新着順
+		orderByClause = "ORDER BY created_at DESC"
+	default:
+		// 上記条件以外はデフォルトの新着順にする
+		orderByClause = "ORDER BY created_at DESC"
+	}
+
 	// データベース接続を取得する
 	db := database.GetDB()
 
@@ -75,15 +91,16 @@ func GetProductsHandler(c *gin.Context) {
 	offset := (page - 1) * perPage
 
 	// 商品一覧を取得するSQL文を準備する
-	query := `
+	query := fmt.Sprintf(`
 			SELECT
 				id,
 				name,
 				price,
 				image_url
 			FROM products
+			%s
 			LIMIT ? OFFSET ?
-		`
+		`, orderByClause) // %sの部分に変数orderByClauseが挿入される
 
 	// SQL文を実行する
 	rows, err := db.Query(query, perPage, offset)
