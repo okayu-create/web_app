@@ -73,13 +73,27 @@ func GetProductsHandler(c *gin.Context) {
 		orderByClause = "ORDER BY created_at DESC"
 	}
 
+	// クエリパラメータ（?keyword=x）から「検索キーワード」を取得する
+	keyword := c.DefaultQuery("keyword", "")
+
+	// 検索条件（WHERE句）を構築する
+	var whereClause string
+	var whereParams []any // WHERE句用のパラメータを格納するスライス
+	if keyword != "" {
+		whereClause = "WHERE (name LIKE ? OR description LIKE ?)"
+		// パラメータ（%キーワード%）をスライスに格納する
+		likekeyword := "%" + keyword + "%"
+		whereParams = append(whereParams, likekeyword, likekeyword)
+	}
+
 	// データベース接続を取得する
 	db := database.GetDB()
 
 	// 商品の総数を取得するSQL文を実行する
 	var totalItems int
-	countQuery := "SELECT COUNT(*) FROM products"
-	err = db.QueryRow(countQuery).Scan(&totalItems)
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM products %s", whereClause)
+	// whereParams...でスライスの内容を展開してQueryRow()メソッドに渡す
+	err = db.QueryRow(countQuery, whereParams...).Scan(&totalItems)
 	if err != nil {
 		log.Printf("商品総数の取得エラー: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "サーバーエラーが発生しました"})
@@ -99,11 +113,15 @@ func GetProductsHandler(c *gin.Context) {
 				image_url
 			FROM products
 			%s
+			%s
 			LIMIT ? OFFSET ?
-		`, orderByClause) // %sの部分に変数orderByClauseが挿入される
+		`, whereClause, orderByClause) // %sの部分に変数whereClauseとorderByClauseが挿入される
+
+	// SQL文に渡すパラメータを準備する
+	queryParams := append(whereParams, perPage, offset)
 
 	// SQL文を実行する
-	rows, err := db.Query(query, perPage, offset)
+	rows, err := db.Query(query, queryParams...)
 	if err != nil {
 		log.Printf("商品一覧の取得エラー: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "サーバーエラーが発生しました"})
