@@ -59,6 +59,8 @@ func main() {
 			})
 		})
 		api.GET("/products", handler.GetProductsHandler)
+		api.GET("/products:id", handler.GetProductByIDHandler)
+		api.GET("/home", handler.GetHomePageProductsHandler)
 	}
 
 	// Ginサーバをポート8080で起動する
