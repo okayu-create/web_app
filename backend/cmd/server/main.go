@@ -18,6 +18,11 @@ import (
 )
 
 func main() {
+	// 環境変数JWT_SECRETが設定されているか確認する
+	if os.Getenv("JWT_SECRET") == "" {
+		log.Fatal("エラー：環境変数JWT_SECRETが設定されていません")
+	}
+
 	// マイグレーションを実行する
 	runMigration()
 
@@ -63,6 +68,12 @@ func main() {
 		api.GET("/home", handler.GetHomePageProductsHandler)
 
 		api.POST("/users", handler.RegisterUserHandler)
+
+		auth := api.Group("/auth")
+		{
+			auth.POST("/login", handler.LoginHandler)
+			auth.POST("/logout", handler.LogoutHandler)
+		}
 	}
 
 	// Ginサーバをポート8080で起動する
