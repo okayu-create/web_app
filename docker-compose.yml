@@ -50,6 +50,8 @@ services:
     environment:
       # .envファイルからDB接続情報を読み込む
       DB_DSN: ${DB_DSN}
+      # .envファイルからJWTの秘密鍵を読み込む
+      JWT_SECRET: ${JWT_SECRET}      
     depends_on:
       # dbサービスの「健康診断OK（healthy）」を待ってからbackendサービスを起動する
       db:
