@@ -19,6 +19,14 @@ type UserRegisterRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// 会員情報レスポンスの構造体
+type UserMeResponse struct {
+	UserID  int    `json:"userId"`
+	Name    string `json:"name"`
+	Email   string `json:"email"`
+	IsAdmin bool   `json:"isAdmin"`
+}
+
 // --- 2. ハンドラ定義 ---
 
 // 会員登録を行う関数
@@ -82,4 +90,34 @@ func RegisterUserHandler(c *gin.Context) {
 
 	// 登録成功のレスポンスを返す
 	c.JSON(http.StatusOK, gin.H{"message": "会員登録が完了しました"})
+}
+
+// 自分の会員情報を取得する関数
+func GetUserMeHandler(c *gin.Context) {
+	// ミドルウェア関数AuthMiddlewareによってコンテキストに保存されたクレームを取得する
+	userClaims, exists := c.Get("user")
+	if !exists {
+		log.Println("GetUserMeHandler: コンテキストにユーザー情報が見つかりません")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証情報が見つかりません"})
+		return
+	}
+
+	// 型アサーションでクレームを取得する
+	claims, ok := userClaims.(*JWTCustomClaims)
+	if !ok {
+		log.Println("GetUserMeHandler: ユーザー情報の型アサーションに失敗しました")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "サーバーエラーが発生しました"})
+		return
+	}
+
+	// 最終的なレスポンスの形にまとめる
+	response := UserMeResponse{
+		UserID:  claims.UserID,
+		Name:    claims.Name,
+		Email:   claims.Email,
+		IsAdmin: claims.IsAdmin,
+	}
+
+	// JSONとしてレスポンスを返す
+	c.JSON(http.StatusOK, response)
 }
