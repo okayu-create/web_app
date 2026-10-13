@@ -2,6 +2,7 @@ package handler
 
 import (
 	"database/sql"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -32,7 +33,7 @@ type userForAuth struct {
 }
 
 // JWTトークンに含めるクレーム（Payload）の構造体
-type jwtCustomClaims struct {
+type JWTCustomClaims struct {
 	UserID               int    `json:"userId"`
 	Name                 string `json:"name"`
 	Email                string `json:"email"`
@@ -44,7 +45,34 @@ type jwtCustomClaims struct {
 var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
 
 // ブラウザのクッキーに保存する際のクッキー名
-const authTokenCookieName = "authToken"
+const AuthTokenCookieName = "authToken"
+
+// JWTトークンを検証し、クレームを返す関数
+func VerifyToken(tokenString string) (*JWTCustomClaims, error) {
+	// 関数ParseWithClaimsを使ってJWTトークンをパース・署名検証し、
+	// 結果のクレームをJWTCustomClaims構造体にマッピングする
+	token, err := jwt.ParseWithClaims(tokenString, &JWTCustomClaims{}, func(token *jwt.Token) (any, error) {
+		// 署名方法がHS256であることを確認する
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("予期しない署名方法です")
+		}
+		// 署名検証用の秘密鍵を返す
+		return jwtSecret, nil
+	})
+
+	// パースまたは署名検証に失敗した場合はエラーを返す
+	if err != nil {
+		log.Printf("トークン検証エラー: %v", err)
+		return nil, err
+	}
+
+	// クレームを*JWTCustomClaims型として型アサーションでき、かつJWTトークンが有効か確認する
+	if claims, ok := token.Claims.(*JWTCustomClaims); ok && token.Valid {
+		return claims, nil
+	} else {
+		return nil, errors.New("無効なトークンです")
+	}
+}
 
 // --- 2. ハンドラ定義 ---
 
@@ -92,7 +120,7 @@ func LoginHandler(c *gin.Context) {
 
 	// JWTトークンを生成する
 	expirationTime := time.Now().Add(1 * time.Hour) // 有効期限: 1時間
-	claims := &jwtCustomClaims{
+	claims := &JWTCustomClaims{
 		UserID:  user.ID,
 		Name:    user.Name,
 		Email:   user.Email,
@@ -114,7 +142,7 @@ func LoginHandler(c *gin.Context) {
 
 	// JWTトークンをクッキーに保存する
 	c.SetCookie(
-		authTokenCookieName, // クッキー名
+		AuthTokenCookieName, // クッキー名
 		tokenString,         // JWTトークンの文字列
 		3600,                // 有効期限（秒）
 		"/",                 // パス
@@ -134,7 +162,7 @@ func LoginHandler(c *gin.Context) {
 func LogoutHandler(c *gin.Context) {
 	// クッキーの有効期限を過去に設定することで削除する
 	c.SetCookie(
-		authTokenCookieName,
+		AuthTokenCookieName,
 		"", // クッキー名は空文字列にする
 		-1, // 有効期限を過去に設定する
 		"/",

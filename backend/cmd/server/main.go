@@ -15,6 +15,7 @@ import (
 
 	"github.com/okayu-create/web_app/tree/main/backend/internal/database"
 	"github.com/okayu-create/web_app/tree/main/backend/internal/handler"
+	"github.com/okayu-create/web_app/tree/main/backend/internal/middleware"
 )
 
 func main() {
@@ -73,6 +74,23 @@ func main() {
 		{
 			auth.POST("/login", handler.LoginHandler)
 			auth.POST("/logout", handler.LogoutHandler)
+		}
+
+		// 認証が必要なルートグループ
+		// これらのルートは、先にミドルウェア関数AuthMiddlewareが実行される
+		authorized := api.Group("/")
+		authorized.Use(middleware.AuthMiddleware())
+		{
+			authorized.GET("/users/me", handler.GetUserMeHandler)
+		}
+
+		// 管理者権限が必要なルートグループ
+		// これらのルートは、先にミドルウェア関数AuthMiddlewareとAdminAuthMiddlewareが実行される
+		admin := api.Group("/")
+		admin.Use(middleware.AuthMiddleware())
+		admin.Use(middleware.AdminAuthMiddleware())
+		{
+			// ここに管理者権限が必要なルートを追加する
 		}
 	}
 
