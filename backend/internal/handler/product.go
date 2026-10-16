@@ -20,10 +20,12 @@ import (
 
 // 商品一覧用の構造体
 type ProductListItem struct {
-	ID       int     `json:"id"`
-	Name     string  `json:"name"`
-	Price    int     `json:"price"`
-	ImageURL *string `json:"image_url"` // NULL許容
+	ID        int       `json:"id"`
+	Name      string    `json:"name"`
+	Price     int       `json:"price"`
+	Stock     int       `json:"stock"`
+	ImageURL  *string   `json:"image_url"` // NULL許容
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // 商品詳細用の構造体
@@ -54,11 +56,19 @@ type ProductsPageData struct {
 	Pagination Pagination        `json:"pagination"`
 }
 
+// トップページ用の構造体
+type HomePageProduct struct {
+	ID       int     `json:"id"`
+	Name     string  `json:"name"`
+	Price    int     `json:"price"`
+	ImageURL *string `json:"image_url"`
+}
+
 // トップページ全体のレスポンスを表す構造体
 type HomePageData struct {
-	PickUp     []ProductListItem `json:"pickUp"`
-	NewArrival []ProductListItem `json:"newArrival"`
-	HotItems   []ProductListItem `json:"hotItems"`
+	PickUp     []HomePageProduct `json:"pickUp"`
+	NewArrival []HomePageProduct `json:"newArrival"`
+	HotItems   []HomePageProduct `json:"hotItems"`
 }
 
 // --- 2. ハンドラ定義 ---
@@ -133,7 +143,9 @@ func GetProductsHandler(c *gin.Context) {
 				id,
 				name,
 				price,
-				image_url
+				stock,
+				image_url,
+				updated_at			
 			FROM products
 			%s
 			%s
@@ -162,7 +174,14 @@ func GetProductsHandler(c *gin.Context) {
 		var imageUrl sql.NullString
 		// 取得したデータをProductListItem構造体のフィールドにマッピングする
 		// image_urlカラムは変数imageUrlにスキャンする
-		if err := rows.Scan(&p.ID, &p.Name, &p.Price, &imageUrl); err != nil {
+		if err := rows.Scan(
+			&p.ID,
+			&p.Name,
+			&p.Price,
+			&p.Stock,
+			&imageUrl,
+			&p.UpdatedAt,
+		); err != nil {
 			log.Printf("商品データのスキャンエラー: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "サーバーエラーが発生しました"})
 			return
@@ -273,7 +292,7 @@ func GetHomePageProductsHandler(c *gin.Context) {
 	db := database.GetDB()
 
 	// 各セクションのデータを格納するスライス
-	var pickUp, newArrival, hotItems []ProductListItem
+	var pickUp, newArrival, hotItems []HomePageProduct
 	// エラーハンドリング用の変数
 	var pickUpErr, newArrivalErr, hotItemsErr error
 	//	Goルーチンの完了を待つためのWaitGroup
@@ -304,7 +323,7 @@ func GetHomePageProductsHandler(c *gin.Context) {
 		defer rows.Close()
 
 		for rows.Next() {
-			var p ProductListItem
+			var p HomePageProduct
 			var imageUrl sql.NullString
 			if err := rows.Scan(&p.ID, &p.Name, &p.Price, &imageUrl); err != nil {
 				log.Printf("おすすめ商品スキャンエラー：%v", err)
@@ -341,7 +360,7 @@ func GetHomePageProductsHandler(c *gin.Context) {
 		defer rows.Close()
 
 		for rows.Next() {
-			var p ProductListItem
+			var p HomePageProduct
 			var imageUrl sql.NullString
 			if err := rows.Scan(&p.ID, &p.Name, &p.Price, &imageUrl); err != nil {
 				log.Printf("新着商品スキャンエラー：%v", err)
@@ -380,7 +399,7 @@ func GetHomePageProductsHandler(c *gin.Context) {
 		defer rows.Close()
 
 		for rows.Next() {
-			var p ProductListItem
+			var p HomePageProduct
 			var imageUrl sql.NullString
 			if err := rows.Scan(&p.ID, &p.Name, &p.Price, &imageUrl); err != nil {
 				log.Printf("注目商品スキャンエラー：%v", err)
