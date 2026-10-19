@@ -90,7 +90,7 @@ func main() {
 		admin.Use(middleware.AuthMiddleware())
 		admin.Use(middleware.AdminAuthMiddleware())
 		{
-			// ここに管理者権限が必要なルートを追加する
+			admin.POST("/products", handler.AdminCreateProductHandler)
 		}
 	}
 
