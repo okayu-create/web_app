@@ -65,7 +65,7 @@ func main() {
 			})
 		})
 		api.GET("/products", handler.GetProductsHandler)
-		api.GET("/products:id", handler.GetProductByIDHandler)
+		api.GET("/products/:id", handler.GetProductByIDHandler)
 		api.GET("/home", handler.GetHomePageProductsHandler)
 
 		api.POST("/users", handler.RegisterUserHandler)
